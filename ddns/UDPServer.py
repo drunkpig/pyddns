@@ -19,7 +19,7 @@ class UDPServer(DatagramProtocol):
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        asyncio.create_task(self.resolver.handle_data(data, addr))
+        asyncio.create_task(self.resolver.resolve(data, addr))
 
     def error_received(self, exc):
         self.logger.error(exc)

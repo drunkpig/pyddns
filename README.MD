@@ -16,3 +16,6 @@
 
 - UDNS https://github.com/prologic/udns
 - async_DNS https://github.com/drunkpig/async_dns
+
+- dns记录有关知识 https://www.zytrax.com/books/dns/ch8/
+- 知识2  https://en.wikipedia.org/wiki/Zone_file
