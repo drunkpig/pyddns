@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>pyddns--dynamic dns made by python</title>
+</head>
+<body>
+
+<table>
+    <tr>
+        <td>
+        Domain:
+            <select>
+                {% for domain in domains %}
+                    <option value="{{ domain }}">{{ domain }}</option>
+                {% endfor %}
+            </select>
+        </td>
+    </tr>
+    <tr><td>NAME</td><td>TTL(s)</td><td>record class</td><td>record type</td><td>record data</td><td>comment</td></tr>
+    {% for rr in rrs %}
+    <tr><td>{{ rr }} </td><td>TTL(s)</td><td>record class</td><td>record type</td><td>record data</td><td>comment</td></tr>
+    {% endfor %}
+</table>
+</body>
+</html>

@@ -26,11 +26,12 @@ def __init_db(dbpath, dbname, table_name):
         create table  if not exists  {table_name}(
         id INTEGER  PRIMARY KEY autoincrement,
         name VARCHAR(255),
-        ttl_s INTEGER,
+        ttl INTEGER,
         record_class VARCHAR(255),
         record_type VARCHAR(255),
         record_data VARCHAR(255),
-        last_modify VARCHAR(255)
+        last_modify VARCHAR(255),
+        comment VARCHAR(512)
         )
     """
     cur.execute(sql)
