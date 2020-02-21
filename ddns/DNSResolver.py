@@ -3,6 +3,7 @@ import aiosqlite
 from ddns import config
 from dnslib import DNSQuestion, DNSRecord
 from dnslib import A, AAAA, CLASS, QR, QTYPE, RR,RDMAP
+import random
 
 CNAME = QTYPE.reverse["CNAME"]
 
@@ -12,28 +13,22 @@ class DNSResolver(object):
     logger = logging.getLogger()
 
     def __init__(self):
-        self.peers = []
-        self.requests = []
+        self.peers = {}
+        self.requests = {}
         self.db = f"{config.db_path}/{config.db_name}"
-        self.transport = None  #连接建立时初始化
+        self.transport = None  #连接建立时被初始化
 
     async def resolve(self, data, addr):
         record = DNSRecord.parse(data)
-        self.logger.info(f"Request from ({addr[0]}:{addr[1]}) qclass={CLASS.get(record.q.qclass)}, qtype={QTYPE.get(record.q.qtype)}, qname={str(record.q.qname)}")
+        self.logger.info(f"<<< from ({addr[0]}:{addr[1]}) qclass={CLASS.get(record.q.qclass)}, qtype={QTYPE.get(record.q.qtype)}, qname={str(record.q.qname)}")
         if record.header.qr == QR.QUERY:         # 如果是查询这台服务器
             pkg = await self.__handle_query(record, addr)
             if pkg is not None:
-                self.logger.info("query ok")
                 self.transport.send_to(pkg, addr)
-            else:
-                self.logger.info("query local no result")
         else:                # 如果是自己发出的递归查询的回复 TODO 检查回复包是不是对的
             await self.__handle_response(data, addr)
 
     async def __handle_query(self, record, addr):
-        # qname = str(record.q.qname)  # name ttl class type data
-        # qtype = record.q.qtype
-        # qclass = record.q.qclass
         records = await self.__query_db(record)
         if records:
             rr = []
@@ -46,10 +41,10 @@ class DNSResolver(object):
                 rr.append(r.rr)
 
             reply.add_answer(*rr)
+            self.logger.info(f">>> {addr}, {rr}")
             return reply.pack()
         else:
             await self.__forward_query(record, addr)
-            self.logger.info("forward query")
             return None
 
     async def __handle_response(self, response, peer):
@@ -57,11 +52,12 @@ class DNSResolver(object):
         本地没查到，本服务做递归DNS查询，其他服务器返回的结果
         :return:
         """
-        id = response.header.id
+        record = DNSRecord.parse(response)
+        id = record.header.id
 
-        qname = str(response.q.qname)
-        qtype = response.q.qtype
-        qclass = response.q.qclass
+        qname = str(record.q.qname)
+        qtype = record.q.qtype
+        qclass = record.q.qclass
 
         if id not in self.peers:
             self.logger.info(
@@ -73,13 +69,14 @@ class DNSResolver(object):
 
             return
 
-        peer = self.peers[id]
+        addr = self.peers[id]
         request = self.requests[id]
         reply = request.reply()
-        reply.add_answer(*response.rr)
+        reply.add_answer(*record.rr)
         del self.peers[id]
         del self.requests[id]
-        self.transport.send_to(reply.pack(), peer)
+        self.transport.sendto(reply.pack(), addr)
+        self.logger.info(f"==Reply from {peer}")
 
     async def __forward_query(self, request, addr):
         """
@@ -93,7 +90,8 @@ class DNSResolver(object):
         id = lookup.header.id
         self.peers[id] = addr
         self.requests[id] = request
-        self.transport.send_to(lookup.pack(), ("8.8.8.8",53))
+        self.transport.sendto(lookup.pack(), (random.choice(config.forward_dns),53))
+        self.logger.info("<<<>>> Froward")
 
     async def __query_cname(self, rdata):
         records = []
@@ -162,4 +160,3 @@ class RecordModel(object):
     def rr(self):
         rdata = RDMAP[QTYPE[self.record_type]](self.record_data)
         return RR(self.name, self.record_type, self.record_class, self.ttl, rdata)
-

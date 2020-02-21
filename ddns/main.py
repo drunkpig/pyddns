@@ -1,14 +1,23 @@
-import logging
 import asyncio
+import logging
 import sqlite3
 from logging.config import fileConfig
+
 from ddns import config
 from ddns.DNSResolver import DNSResolver
 from ddns.UDPServer import UDPServer
 
 
+def handle_exception(loop, context):
+    # context["message"] will always be there; but context["exception"] may not
+    msg = context.get("exception", context["message"])
+    logging.error(f"Caught exception: {msg}")
+    logging.error(context.get("exception"))
+
+
 async def start_server(host='0.0.0.0', port=53):
     loop = asyncio.get_event_loop()
+    loop.set_exception_handler(handle_exception)
     resolver = DNSResolver()
     transport, protocol = await loop.create_datagram_endpoint(
         lambda: UDPServer(resolver), local_addr=(host, port))
@@ -17,7 +26,6 @@ async def start_server(host='0.0.0.0', port=53):
 
 
 def __init_db(dbpath, dbname, table_name):
-
     db = f"{dbpath}/{dbname}"
     print(f"use db {db}")
     conn = sqlite3.connect(db)
@@ -31,7 +39,8 @@ def __init_db(dbpath, dbname, table_name):
         record_type VARCHAR(255),
         record_data VARCHAR(255),
         last_modify VARCHAR(255),
-        comment VARCHAR(512)
+        comment VARCHAR(512),
+        flag VARCHAR(16)
         )
     """
     cur.execute(sql)
@@ -40,7 +49,7 @@ def __init_db(dbpath, dbname, table_name):
     conn.close()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     fileConfig('../logging.ini')
     logger = logging.getLogger()
     __init_db(config.db_path, config.db_name, config.table_name)
