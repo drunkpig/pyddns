@@ -20,6 +20,7 @@
 
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.9/dist/js/bootstrap-select.min.js"></script>
+
 </head>
 <body>
 
@@ -29,11 +30,16 @@
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav mr-auto">
             <li>
-                <select class="selectpicker  show-tick" data-live-search="true" title="Choose a domain">
+                <select onchange="javascript: window.location.href=this.value;" class="selectpicker  show-tick"
+                        data-live-search="true" title="Choose a domain">
                     {% for domain in domains %}
-                        <option class="dropdown-item" value="/{{ domain.domain_name }}">{{ domain.domain_name }}</option>
+                        <option {% if cur_domain==domain.domain_name %}selected{% endif %} class="dropdown-item"
+                                value="/{{ domain.domain_name }}">{{ domain.domain_name }}</option>
                     {% endfor %}
                 </select>
+            </li>
+            <li>
+
             </li>
         </ul>
 
@@ -41,23 +47,62 @@
             <input type="text" name="domain_name" class="form-control-sm mr-sm-2" placeholder="domain name">
             <button type="submit" class="btn btn-sm btn-outline-success">add new domain</button>
         </form>
+        <button type="button" class="btn btn-sm btn-outline-success ml-sm-2" data-toggle="collapse"
+                data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">add a record
+        </button>
     </div>
-
 </nav>
 
+<div class="collapse" id="collapseExample">
+    {#  <div class="card card-body">#}
+    {##}
+    {#  </div>#}
+    <form method="post" action="/add-record">
+        <table class="table">
+{#            <tr>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td>IN</td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#                <td></td>#}
+{#            </tr>#}
+            <tr>
+                <td>
+
+
+
+                </td>
+                <td></td>
+                <td></td>
+                <td>IN</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+    </form>
+</div>
 <table class="table">
     <thead class="table-dark">
     <tr>
-        <td>NAME</td>
+        <td>主机记录</td>
         <td>TTL(s)</td>
-        <td>record class</td>
-        <td>record type</td>
-        <td>record data</td>
-        <td>comment</td>
-        <td>last modify</td>
-        <td>flag</td>
-        <td>enable</td>
-        <td>Operation</td>
+        <td>Record Class</td>
+        <td>记录类型(RT)</td>
+        <td>记录值</td>
+        <td>备注</td>
+        <td>最后更新</td>
+        <td>标记</td>
+        <td>生效</td>
+        <td>操作</td>
     </tr>
     </thead>
     {% for rr in rrs %}
