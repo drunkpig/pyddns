@@ -1,5 +1,6 @@
 # pyddns
 
+![](./screenshot.png)
 
 ## features
 1. add / delete / update record
