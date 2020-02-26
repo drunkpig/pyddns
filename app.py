@@ -58,5 +58,11 @@ def add_domain():
     return redirect("/")
 
 
+@app.route('/add-record', methods=['POST'])
+def add_record():
+    domain_name = request.form.get('domain_name')
+    return redirect(f"/{domain_name}")
+
+
 if __name__ == '__main__':
     app.run()
