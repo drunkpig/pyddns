@@ -5,11 +5,25 @@ from flask import render_template
 from urllib.parse import quote
 from flask_sqlalchemy import SQLAlchemy
 from ddns import config
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{config.db_path}/{config.db_name}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False #禁止py3报兼容性问题
 db = SQLAlchemy(app)
+auth = HTTPBasicAuth()
+users = {
+    config.ui_user: generate_password_hash(config.ui_passwd),
+}
+
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users:
+        return check_password_hash(users.get(username), password)
+    return False
 
 
 class Domain(db.Model):
@@ -37,6 +51,7 @@ db.session.commit()
 
 @app.route('/')
 @app.route('/<domain_name>')
+@auth.login_required
 def index(domain_name=None):
     if domain_name:
         records = Records.query.filter_by(domain_name=domain_name).all()

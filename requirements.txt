@@ -2,3 +2,4 @@ flask
 dnslib
 aiosqlite
 Flask-SQLAlchemy
+Flask-HTTPAuth

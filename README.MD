@@ -18,4 +18,5 @@
 - bootstrap4 下拉框 https://developer.snapappointments.com/bootstrap-select/examples/#live-search
 - jquery 下拉选择框 http://indrimuska.github.io/jquery-editable-select/
 - html转移与反转义 https://www.sojson.com/rehtml
-- 
+- https://github.com/sudouser2010/flask_optional_routes
+- https://flask-httpauth.readthedocs.io/en/latest/
