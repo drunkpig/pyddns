@@ -3,3 +3,4 @@ dnslib
 aiosqlite
 Flask-SQLAlchemy
 Flask-HTTPAuth
+Flask-WTF

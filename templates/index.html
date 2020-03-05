@@ -71,60 +71,68 @@
         <div class="form-group row">
             <label for="record_name" class="col-sm-1 col-form-label text-right">主机记录</label>
             <div class="col-sm-2">
-                <select id="record_name">
-                    <option value="abc">&lt;span class=&quot;v_title&quot;&gt;abc&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;二级域名abc.example.com&lt;/span&gt;</option>
-                    <option value="@">&lt;span class=&quot;v_title&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;直接解析example.com&lt;/span&gt;</option>
-                    <option value="*">&lt;span class=&quot;v_title&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;泛解析*.example.com&lt;/span&gt;</option>
-                </select>
+{#                <select id="record_name">#}
+{#                    <option value="abc">&lt;span class=&quot;v_title&quot;&gt;abc&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;二级域名abc.example.com&lt;/span&gt;</option>#}
+{#                    <option value="@">&lt;span class=&quot;v_title&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;直接解析example.com&lt;/span&gt;</option>#}
+{#                    <option value="*">&lt;span class=&quot;v_title&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;v_tip&quot;&gt;泛解析*.example.com&lt;/span&gt;</option>#}
+{#                </select>#}
+                {{ form.record_name }}
             </div>
             <label for="ttl" class="col-sm-1 col-form-label text-right">TTL（秒）</label>
             <div class="col-sm-2">
-               <select id="ttl">
-                    <option value="60">1分钟</option>
-                    <option value="300">5分钟</option>
-                    <option value="900">15分钟</option>
-                    <option value="1800">30分钟</option>
-                    <option value="3600">60分钟</option>
-                </select>
+{#               <select id="ttl">#}
+{#                    <option value="60">1分钟</option>#}
+{#                    <option value="300">5分钟</option>#}
+{#                    <option value="900">15分钟</option>#}
+{#                    <option value="1800">30分钟</option>#}
+{#                    <option value="3600">60分钟</option>#}
+{#                </select>#}
+                {{ form.ttl }}
             </div>
             <label for="record_class" class="col-sm-1 col-form-label text-right">记录类别</label>
             <div class="col-sm-2">
-               <input disabled type="text" id="record_class" value="IN"/>
+{#               <input disabled type="text" id="record_class" value="IN"/>#}
+                {{ form.record_class }}
             </div>
             <label for="record_type" class="col-sm-1 col-form-label text-right">记录类型</label>
             <div class="col-sm-2">
-               <select id="record_type">
-                    <option value="A">A</option>
-                    <option value="AAAA">AAAA</option>
-                    <option value="CNAME">CNAME</option>
-                    <option value="MX">MX</option>
-                    <option value="TXT">TXT</option>
-                    <option value="NS">NS</option>
-                </select>
+{#               <select id="record_type">#}
+{#                    <option value="A">A</option>#}
+{#                    <option value="AAAA">AAAA</option>#}
+{#                    <option value="CNAME">CNAME</option>#}
+{#                    <option value="MX">MX</option>#}
+{#                    <option value="TXT">TXT</option>#}
+{#                    <option value="NS">NS</option>#}
+{#                </select>#}
+                {{ form.record_type }}
             </div>
         </div>
         <div class="form-group row">
             <label for="record_value" class="col-sm-1 col-form-label text-right">记录值</label>
             <div class="col-sm-2">
-                <input type="text" name="record_value" id="record_value"/>
+{#                <input type="text" name="record_value" id="record_value"/>#}
+                {{ form.record_value }}
             </div>
             <label for="comment" class="col-sm-1 col-form-label text-right">备注</label>
             <div class="col-sm-2">
-               <input id="comment" type="text" name="comment"/>
+{#               <input id="comment" type="text" name="comment"/>#}
+                {{ form.comment }}
             </div>
             <label for="flag" class="col-sm-1 col-form-label text-right">标记</label>
             <div class="col-sm-2">
-               <select id="flag">
-                   <option value="DEFAULT">默认</option>
-                    <option value="DDNS">动态DNS</option>
-                </select>
+{#               <select id="flag">#}
+{#                   <option value="DEFAULT">默认</option>#}
+{#                    <option value="DDNS">动态DNS</option>#}
+{#                </select>#}
+                {{ form.flag }}
             </div>
             <label for="is_enable" class="col-sm-1 col-form-label text-right">是否生效</label>
             <div class="col-sm-2">
-               <select id="is_enable">
-                    <option value="Y" selected>是</option>
-                    <option value="N">否</option>
-                </select>
+{#               <select id="is_enable">#}
+{#                    <option value="Y" selected>是</option>#}
+{#                    <option value="N">否</option>#}
+{#                </select>#}
+                {{ form.is_enable }}
             </div>
 
         </div>
@@ -171,11 +179,13 @@
     $('#record_name').editableSelect({ filter: false });
     $('#ttl').editableSelect({ filter: false });
     $('#record_class').editableSelect({ filter: false });
+    $('#record_class1').editableSelect({ filter: false });
     $('#record_type').editableSelect({ filter: false });
     $('#record_value').editableSelect({ filter: false });
     $('#comment').editableSelect({ filter: false });
     $('#flag').editableSelect({ filter: false });
     $('#is_enable').editableSelect({ filter: false });
 </script>
+
 </body>
 </html>

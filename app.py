@@ -7,6 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from ddns import config
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf import FlaskForm
+from wtforms import StringField,SelectField
+from wtforms.validators import DataRequired
 
 
 app = Flask(__name__)
@@ -24,6 +27,23 @@ def verify_password(username, password):
     if username in users:
         return check_password_hash(users.get(username), password)
     return False
+
+
+class MyForm(FlaskForm):
+
+    select = SelectField("select", choices=[("label1", "value1"),("data2","value2")], **{"id":'record_class1'})
+    record_name=SelectField("record_name", choices=[("abc","<span class='v_title'>abc</span><span class='v_tip'>二级域名abc.example.com</span>"),
+                                                    ("@", '<span class="v_title">@</span><span class="v_tip">直接解析example.com</span>'),
+                                                    ("*", '<span class="v_title">*</span><span class="v_tip">泛解析*.example.com</span>')], **{"id":'record_name'})
+    ttl = SelectField("ttl", choices=[("60", "1分钟"), ("300", "5分钟"), ("900", "15分钟"), ("1800", "30分钟"), ("3600", "60分钟")], **{"id": 'ttl'})
+    record_class=StringField("record_class", default="IN",  **{"id":'record_class'})
+    record_type = SelectField("record_type", choices=[("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME"), ("MX", "MX"), ("TXT", "TXT"),("NS", "NS")], **{"id": 'record_type'})
+    record_value=StringField("record_value",  **{"id":'record_value'})
+    comment=StringField("comment",  **{"id":'comment'})
+    flag = SelectField("flag", choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
+    is_enable = SelectField("is_enable", choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
+
+
 
 
 class Domain(db.Model):
@@ -59,7 +79,7 @@ def index(domain_name=None):
         records = Records.query.all()
 
     domains = Domain.query.all()
-    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name})
+    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name, 'form':MyForm(csrf_enabled=False)})
 
 
 @app.route('/add-domain', methods=['POST'])
