@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask, flash
+from datetime import datetime
 from flask import Flask, jsonify, redirect, url_for
 from flask import request
 from flask import render_template
@@ -9,12 +10,13 @@ from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField,SelectField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired,AnyOf
 
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{config.db_path}/{config.db_name}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False #禁止py3报兼容性问题
+app.config['SECRET_KEY'] = 'any secret string'
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
 users = {
@@ -29,21 +31,42 @@ def verify_password(username, password):
     return False
 
 
-class MyForm(FlaskForm):
-
-    select = SelectField("select", choices=[("label1", "value1"),("data2","value2")], **{"id":'record_class1'})
-    record_name=SelectField("record_name", choices=[("abc","<span class='v_title'>abc</span><span class='v_tip'>二级域名abc.example.com</span>"),
+class RecordForm(FlaskForm):
+    record_name=SelectField("record_name", validators=[DataRequired()], choices=[("abc","<span class='v_title'>abc</span><span class='v_tip'>二级域名abc.example.com</span>"),
                                                     ("@", '<span class="v_title">@</span><span class="v_tip">直接解析example.com</span>'),
                                                     ("*", '<span class="v_title">*</span><span class="v_tip">泛解析*.example.com</span>')], **{"id":'record_name'})
-    ttl = SelectField("ttl", choices=[("60", "1分钟"), ("300", "5分钟"), ("900", "15分钟"), ("1800", "30分钟"), ("3600", "60分钟")], **{"id": 'ttl'})
-    record_class=StringField("record_class", default="IN",  **{"id":'record_class'})
-    record_type = SelectField("record_type", choices=[("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME"), ("MX", "MX"), ("TXT", "TXT"),("NS", "NS")], **{"id": 'record_type'})
-    record_value=StringField("record_value",  **{"id":'record_value'})
+    ttl = SelectField("ttl", validators=[DataRequired()], choices=[("60", "1分钟"), ("300", "5分钟"), ("900", "15分钟"), ("1800", "30分钟"), ("3600", "60分钟")], **{"id": 'ttl'})
+    record_class=StringField("record_class", validators=[AnyOf(values=["IN"]),DataRequired()], default="IN",  **{"id":'record_class'})
+    record_type = SelectField("record_type", validators=[AnyOf(values=["A","AAAA","CNAME","MX","TXT","NS"]),DataRequired()], choices=[("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME"), ("MX", "MX"), ("TXT", "TXT"),("NS", "NS")], **{"id": 'record_type'})
+    record_value=StringField("record_value", validators=[DataRequired()],  **{"id":'record_value'})
     comment=StringField("comment",  **{"id":'comment'})
-    flag = SelectField("flag", choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
-    is_enable = SelectField("is_enable", choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
+    flag = SelectField("flag", validators=[AnyOf("DEFAULT","DDNS"),DataRequired()], choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
+    is_enable = SelectField("is_enable",  validators=[AnyOf("Y","N"),DataRequired()], choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
 
+    domain_name = StringField("domain_name", validators=[DataRequired()],
+                               **{"id": 'domain_name'})
 
+    def to_record(self):
+        record = Records()
+        record.domain_name = self.data['domain_name']
+        record.name = self.data['record_name']
+        record.ttl = self.data['ttl']
+        record.record_class = self.data['record_class']
+        record.record_type = self.data['record_type']
+        record.record_data = self.data['record_value']
+        record.last_modify = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        record.comment = self.data.get("comment")
+        record.flag = self.data['flag']
+        record.enable = self.data['is_enable']
+        return record
+
+    def get_errors(self):
+        errors = ''
+        for v in self.errors.values():
+            for m in v:
+                errors += m
+            errors += '\n'
+        return errors
 
 
 class Domain(db.Model):
@@ -53,16 +76,22 @@ class Domain(db.Model):
 
 class Records(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    domain_name = db.Column(db.String, unique=True, nullable=False)
-    name = db.Column(db.String, unique=True, nullable=False)
+    domain_name = db.Column(db.String, unique=False, nullable=False)
+    name = db.Column(db.String, unique=False, nullable=False)
     ttl = db.Column(db.Integer, unique=False, nullable=False)
     record_class = db.Column(db.String, unique=False, nullable=False)
     record_type = db.Column(db.String, unique=False, nullable=False)
     record_data = db.Column(db.String, unique=False, nullable=False)
-    last_modify = db.Column(db.Integer, unique=False, nullable=False)
+    last_modify = db.Column(db.String, unique=False, nullable=False)
     comment = db.Column(db.String, unique=False, nullable=True)
     flag = db.Column(db.String, unique=False, nullable=True)
     enable = db.Column(db.String, unique=False, nullable=False)
+
+    def to_record_form(self):
+        f = RecordForm()
+        f.is_enable.data="Y"
+        f.ttl.data="300"
+        return f
 
 
 db.create_all()
@@ -70,16 +99,21 @@ db.session.commit()
 
 
 @app.route('/')
-@app.route('/<domain_name>')
+@app.route('/<path:domain_name>')
+@app.route('/<path:domain_name>/<int:record_id>')
 @auth.login_required
-def index(domain_name=None):
+def index(domain_name=None, record_id=None):
     if domain_name:
         records = Records.query.filter_by(domain_name=domain_name).all()
     else:
-        records = Records.query.all()
+        records = []
 
     domains = Domain.query.all()
-    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name, 'form':MyForm(csrf_enabled=False)})
+    form = RecordForm()
+    if record_id is not None:
+        r = Records.query.get(record_id)
+        form = r.to_record_form()
+    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name, 'form':form})
 
 
 @app.route('/add-domain', methods=['POST'])
@@ -95,8 +129,41 @@ def add_domain():
 
 @app.route('/add-record', methods=['POST'])
 def add_record():
+    form = RecordForm()
     domain_name = request.form.get('domain_name')
+    if form.validate_on_submit():
+        record = form.to_record()
+        try:
+            db.session.add(record)
+            db.session.commit()
+        except Exception as e:
+            flash(str(e))
+        else:
+            flash("添加成功")
+    else:
+        flash(form.get_errors())
+
     return redirect(f"/{domain_name}")
+
+
+@app.route('/delete-record/<int:record_id>/<path:domain_name>', methods=['GET'])
+def delete_record(record_id, domain_name):
+    Records.query.filter_by(id=record_id).delete()
+    db.session.commit()
+    return redirect(f"/{domain_name}")
+
+
+@app.route('/enable/<int:record_id>/<path:domain_name>/<enable>', methods=['GET'])
+def enable(record_id, domain_name, enable):
+    r = Records.query.get(record_id)
+    r.enable = enable
+    db.session.commit()
+    return redirect(f"/{domain_name}")
+
+
+@app.route('/edit-record/<int:record_id>/<path:domain_name>', methods=['GET'])
+def edit_record(record_id, domain_name):
+    return redirect(f"/{domain_name}/{record_id}")
 
 
 if __name__ == '__main__':
