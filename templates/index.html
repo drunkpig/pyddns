@@ -84,52 +84,52 @@
 {% endwith %}
 
 
-<div class="collapse p-4" id="collapseExample">
+<div class="{% if record_id ==None %}collapse{% endif %} p-4" id="collapseExample">
 
     <form method="post" action="/add-record">
         {{ form.hidden_tag() }}
         <div class="form-group row">
             <label for="record_name" class="col-sm-1 col-form-label text-right">主机记录</label>
             <div class="col-sm-2">
-                {{ form.record_name }}
+                {{ form.record_name(value=r.name) }}
             </div>
             <label for="ttl" class="col-sm-1 col-form-label text-right">TTL（秒）</label>
             <div class="col-sm-2">
-                {{ form.ttl }}
+                {{ form.ttl(value=r.ttl) }}
             </div>
             <label for="record_class" class="col-sm-1 col-form-label text-right">记录类别</label>
             <div class="col-sm-2">
-                {#               <input disabled type="text" id="record_class" value="IN"/>#}
-                {{ form.record_class }}
+                {{ form.record_class(value=r.record_class) }}
             </div>
             <label for="record_type" class="col-sm-1 col-form-label text-right">记录类型</label>
             <div class="col-sm-2">
-                {{ form.record_type }}
+                {{ form.record_type(value=r.record_type) }}
             </div>
         </div>
         <div class="form-group row">
             <label for="record_value" class="col-sm-1 col-form-label text-right">记录值</label>
             <div class="col-sm-2">
-                {{ form.record_value }}
+                {{ form.record_value(value=r.record_data) }}
             </div>
             <label for="comment" class="col-sm-1 col-form-label text-right">备注</label>
             <div class="col-sm-2">
-                {{ form.comment }}
+                {{ form.comment(value=r.comment) }}
             </div>
             <label for="flag" class="col-sm-1 col-form-label text-right">标记</label>
             <div class="col-sm-2">
-                {{ form.flag }}
+                {{ form.flag(value=r.flag) }}
             </div>
             <label for="is_enable" class="col-sm-1 col-form-label text-right">是否生效</label>
             <div class="col-sm-2">
-                {{ form.is_enable }}
+                {{ form.is_enable(value=r.enable) }}
             </div>
 
         </div>
         <div class="form-group row">
-            <input type="hidden" value="{{ cur_domain }}" name="domain_name"/>
+            {{ form.domain_name(type='hidden', value=r.domain_name) }}
+            {{ form.id(type='hidden', value=r.id) }}
             <div class="col-md-12">
-                <button type="submit" class="btn btn-light float-right">确认添加</button>
+                <button type="submit" class="btn btn-light float-right">提交</button>
             </div>
         </div>
     </form>

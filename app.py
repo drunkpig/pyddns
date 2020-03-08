@@ -43,8 +43,8 @@ class RecordForm(FlaskForm):
     flag = SelectField("flag", validators=[AnyOf("DEFAULT","DDNS"),DataRequired()], choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
     is_enable = SelectField("is_enable",  validators=[AnyOf("Y","N"),DataRequired()], choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
 
-    domain_name = StringField("domain_name", validators=[DataRequired()],
-                               **{"id": 'domain_name'})
+    domain_name = StringField("domain_name", validators=[DataRequired()], **{"id": 'domain_name'})
+    id = StringField("id", validators=[], **{"id": 'id'})
 
     def to_record(self):
         record = Records()
@@ -79,19 +79,13 @@ class Records(db.Model):
     domain_name = db.Column(db.String, unique=False, nullable=False)
     name = db.Column(db.String, unique=False, nullable=False)
     ttl = db.Column(db.Integer, unique=False, nullable=False)
-    record_class = db.Column(db.String, unique=False, nullable=False)
+    record_class = db.Column(db.String, default="IN", unique=False, nullable=False)
     record_type = db.Column(db.String, unique=False, nullable=False)
     record_data = db.Column(db.String, unique=False, nullable=False)
     last_modify = db.Column(db.String, unique=False, nullable=False)
     comment = db.Column(db.String, unique=False, nullable=True)
     flag = db.Column(db.String, unique=False, nullable=True)
     enable = db.Column(db.String, unique=False, nullable=False)
-
-    def to_record_form(self):
-        f = RecordForm()
-        f.is_enable.data="Y"
-        f.ttl.data="300"
-        return f
 
 
 db.create_all()
@@ -109,11 +103,11 @@ def index(domain_name=None, record_id=None):
         records = []
 
     domains = Domain.query.all()
-    form = RecordForm()
     if record_id is not None:
         r = Records.query.get(record_id)
-        form = r.to_record_form()
-    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name, 'form':form})
+    else:
+        r = Records()
+    return render_template("index.html", **{"records":records, "domains":domains, "cur_domain":domain_name, 'form':RecordForm(), "record_id":record_id, "r":r})
 
 
 @app.route('/add-domain', methods=['POST'])
