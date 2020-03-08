@@ -39,7 +39,7 @@
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <h1 class="navbar-brand" href="#">PyDDNS</h1>
+    <h1 class="navbar-brand" href="#"><a href="/">PyDDNS</a></h1>
 
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav mr-auto">
@@ -61,9 +61,11 @@
             <input type="text" name="domain_name" class="form-control-sm mr-sm-2" placeholder="domain name">
             <button type="submit" class="btn btn-sm btn-outline-success">add new domain</button>
         </form>
+    {% if cur_domain %}
         <button type="button" class="btn btn-sm btn-outline-success ml-sm-2" data-toggle="collapse"
                 data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">add a record
         </button>
+    {% endif %}
     </div>
 </nav>
 
@@ -72,9 +74,9 @@
     {% if messages %}
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
 
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
 
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
@@ -91,43 +93,80 @@
         <div class="form-group row">
             <label for="record_name" class="col-sm-1 col-form-label text-right">主机记录</label>
             <div class="col-sm-2">
-                {{ form.record_name(value=r.name) }}
+                {% if record_id %}
+                    {{ form.record_name(value=r.name) }}
+                {% else %}
+                    {{ form.record_name }}
+                {% endif %}
             </div>
             <label for="ttl" class="col-sm-1 col-form-label text-right">TTL（秒）</label>
             <div class="col-sm-2">
-                {{ form.ttl(value=r.ttl) }}
+                {% if record_id %}
+                    {{ form.ttl(value=r.ttl) }}
+                {% else %}
+                    {{ form.ttl }}
+                {% endif %}
             </div>
             <label for="record_class" class="col-sm-1 col-form-label text-right">记录类别</label>
             <div class="col-sm-2">
-                {{ form.record_class(value=r.record_class) }}
+                {% if record_id %}
+                    {{ form.record_class(value=r.record_class) }}
+                {% else %}
+                    {{ form.record_class }}
+                {% endif %}
             </div>
             <label for="record_type" class="col-sm-1 col-form-label text-right">记录类型</label>
             <div class="col-sm-2">
-                {{ form.record_type(value=r.record_type) }}
+                {% if record_id %}
+                    {{ form.record_type(value=r.record_type) }}
+                {% else %}
+                    {{ form.record_type }}
+                {% endif %}
             </div>
         </div>
         <div class="form-group row">
             <label for="record_value" class="col-sm-1 col-form-label text-right">记录值</label>
             <div class="col-sm-2">
-                {{ form.record_value(value=r.record_data) }}
+                {% if record_id %}
+                    {{ form.record_value(value=r.record_data) }}
+                {% else %}
+                    {{ form.record_value }}
+                {% endif %}
             </div>
             <label for="comment" class="col-sm-1 col-form-label text-right">备注</label>
             <div class="col-sm-2">
-                {{ form.comment(value=r.comment) }}
+                {% if record_id %}
+                    {{ form.comment(value=r.comment) }}
+                {% else %}
+                    {{ form.comment }}
+                {% endif %}
             </div>
             <label for="flag" class="col-sm-1 col-form-label text-right">标记</label>
             <div class="col-sm-2">
-                {{ form.flag(value=r.flag) }}
+                {% if record_id %}
+                    {{ form.flag(value=r.flag) }}
+                {% else %}
+                    {{ form.flag }}
+                {% endif %}
             </div>
             <label for="is_enable" class="col-sm-1 col-form-label text-right">是否生效</label>
             <div class="col-sm-2">
-                {{ form.is_enable(value=r.enable) }}
+                {% if record_id %}
+                    {{ form.is_enable(value=r.enable) }}
+                {% else %}
+                    {{ form.is_enable }}
+                {% endif %}
             </div>
 
         </div>
         <div class="form-group row">
-            {{ form.domain_name(type='hidden', value=r.domain_name) }}
-            {{ form.id(type='hidden', value=r.id) }}
+            {% if record_id ==None %}
+                {{ form.id(type='hidden') }}
+            {% else %}
+                {{ form.id(type='hidden', value=r.id) }}
+            {% endif %}
+            {{ form.domain_name(type='hidden', value=cur_domain) }}
+            {{ form.user(type='hidden', value='admin') }}
             <div class="col-md-12">
                 <button type="submit" class="btn btn-light float-right">提交</button>
             </div>
@@ -137,38 +176,44 @@
 
 
 <table class="table table-hover table-sm">
-    <thead class="table-dark">
+    <thead class="thead-dark">
     <tr>
+        <th></th>
         <th>主机记录</th>
-        <th>TTL(s)</th>
         <th>记录类型(RT)</th>
         <th>记录值</th>
+        <th>标记</th>
+        <th>TTL(s)</th>
         <th>备注</th>
         <th>最后更新</th>
-        <th>标记</th>
+
         <th>生效</th>
         <th>操作</th>
     </tr>
     </thead>
+    <tbody>
     {% for rr in records %}
         <tr>
+            <td><img src="/static/{{ rr.user }}.png"/></td>
             <td>{{ rr.name }} </td>
-            <td>{{ rr.ttl }}</td>
             <td>{{ rr.record_type }}</td>
             <td>{{ rr.record_data }}</td>
+            <td><img title="{{ rr.flag }}" src="/static/flag_{{ rr.flag }}.png"/></td>
+            <td>{{ rr.ttl }}</td>
             <td>{{ rr.comment }}</td>
             <td>{{ rr.last_modify }}</td>
-            <td>{{ rr.flag }}</td>
             <td>
-            {% if rr.enable=='Y' %}
-                <a href="/enable/{{ rr.id }}/{{ cur_domain }}/N"><img src="/static/enable.png"/></a>
+                {% if rr.enable=='Y' %}
+                    <a href="/enable/{{ rr.id }}/{{ cur_domain }}/N"><img src="/static/enable.png"/></a>
                 {% else %}
-                <a href="/enable/{{ rr.id }}/{{ cur_domain }}/Y"><img src="/static/disable.png"/></a>
-            {% endif %}
+                    <a href="/enable/{{ rr.id }}/{{ cur_domain }}/Y"><img src="/static/disable.png"/></a>
+                {% endif %}
             </td>
-            <td><a href="/delete-record/{{ rr.id }}/{{ cur_domain }}"><img src="/static/delete.png"/></a>&nbsp;&nbsp;<a href="/edit-record/{{ rr.id }}/{{ cur_domain }}"><img src="/static/edit.png"/></a></td>
+            <td><a href="/delete-record/{{ rr.id }}/{{ cur_domain }}"><img title="delete" alt="delete" src="/static/delete.png"/></a>&nbsp;&nbsp;<a
+                    href="/edit-record/{{ rr.id }}/{{ cur_domain }}"><img title="edit" alt="edit" src="/static/edit.png"/></a></td>
         </tr>
     {% endfor %}
+    </tbody>
 </table>
 
 <script type="text/javascript">

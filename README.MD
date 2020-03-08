@@ -4,7 +4,7 @@ pyddns is a high performance dns server writen by python with asyncio library.
 The server has a simple but enough UI, except that you can also invoke api to manage your dns records.
 
 
-![](./screenshot.png)
+
 ----
 ![](./pyddns-screenshot-add-record.png)
 

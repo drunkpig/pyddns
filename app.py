@@ -9,9 +9,10 @@ from ddns import config
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import StringField,SelectField
+from wtforms import StringField,SelectField,IntegerField
 from wtforms.validators import DataRequired,AnyOf
-
+from wtforms.compat import text_type
+import string
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{config.db_path}/{config.db_name}"
@@ -31,8 +32,17 @@ def verify_password(username, password):
     return False
 
 
+class SelectInputField(SelectField):
+
+    def __init__(self, label=None, validators=None, coerce=text_type, choices=None, **kwargs):
+        super(SelectInputField, self).__init__(label, validators, coerce, choices, **kwargs)
+
+    def pre_validate(self, form):
+        pass
+
+
 class RecordForm(FlaskForm):
-    record_name=SelectField("record_name", validators=[DataRequired()], choices=[("abc","<span class='v_title'>abc</span><span class='v_tip'>二级域名abc.example.com</span>"),
+    record_name=SelectInputField("record_name", validators=[DataRequired()], choices=[("abc","<span class='v_title'>abc</span><span class='v_tip'>二级域名abc.example.com</span>"),
                                                     ("@", '<span class="v_title">@</span><span class="v_tip">直接解析example.com</span>'),
                                                     ("*", '<span class="v_title">*</span><span class="v_tip">泛解析*.example.com</span>')], **{"id":'record_name'})
     ttl = SelectField("ttl", validators=[DataRequired()], choices=[("60", "1分钟"), ("300", "5分钟"), ("900", "15分钟"), ("1800", "30分钟"), ("3600", "60分钟")], **{"id": 'ttl'})
@@ -40,14 +50,16 @@ class RecordForm(FlaskForm):
     record_type = SelectField("record_type", validators=[AnyOf(values=["A","AAAA","CNAME","MX","TXT","NS"]),DataRequired()], choices=[("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME"), ("MX", "MX"), ("TXT", "TXT"),("NS", "NS")], **{"id": 'record_type'})
     record_value=StringField("record_value", validators=[DataRequired()],  **{"id":'record_value'})
     comment=StringField("comment",  **{"id":'comment'})
-    flag = SelectField("flag", validators=[AnyOf("DEFAULT","DDNS"),DataRequired()], choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
-    is_enable = SelectField("is_enable",  validators=[AnyOf("Y","N"),DataRequired()], choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
+    flag = SelectField("flag", validators=[AnyOf(values=["DEFAULT","DDNS"]), DataRequired()], choices=[("DEFAULT", "默认"), ("DDNS", "动态DNS")], **{"id": 'flag'})
+    is_enable = SelectField("is_enable",  validators=[AnyOf(values=["Y","N"]), DataRequired()], choices=[("Y", "是"), ("N", "否")], **{"id": 'is_enable'})
 
     domain_name = StringField("domain_name", validators=[DataRequired()], **{"id": 'domain_name'})
-    id = StringField("id", validators=[], **{"id": 'id'})
+    id = StringField("id", **{"id": 'id'})
+    user = StringField("user", **{"id": 'user'})
 
     def to_record(self):
         record = Records()
+        record.id = None if self.data['id']=='' else self.data['id']
         record.domain_name = self.data['domain_name']
         record.name = self.data['record_name']
         record.ttl = self.data['ttl']
@@ -58,14 +70,13 @@ class RecordForm(FlaskForm):
         record.comment = self.data.get("comment")
         record.flag = self.data['flag']
         record.enable = self.data['is_enable']
+        record.user = self.data.get("user")
         return record
 
     def get_errors(self):
         errors = ''
-        for v in self.errors.values():
-            for m in v:
-                errors += m
-            errors += '\n'
+        for field, msg in self.errors.items():
+            errors += f"{field}:{msg}\n"
         return errors
 
 
@@ -86,6 +97,20 @@ class Records(db.Model):
     comment = db.Column(db.String, unique=False, nullable=True)
     flag = db.Column(db.String, unique=False, nullable=True)
     enable = db.Column(db.String, unique=False, nullable=False)
+    user = db.Column(db.String, default='admin', unique=False, nullable=False)
+
+    def merge(self, record):
+        self.domain_name = record.domain_name
+        self.name = record.name
+        self.ttl = record.ttl
+        self.record_class = record.record_class
+        self.record_type = record.record_type
+        self.record_data = record.record_data
+        self.last_modify = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.comment = record.comment
+        self.flag = record.flag
+        self.enable = record.enable
+        self.user = "admin" if record.user is None else record.user
 
 
 db.create_all()
@@ -128,12 +153,18 @@ def add_record():
     if form.validate_on_submit():
         record = form.to_record()
         try:
-            db.session.add(record)
-            db.session.commit()
+            if record.id: # update
+                r = Records.query.filter_by(id=record.id).first()
+                r.merge(record)
+                db.session.merge(r)
+                db.session.commit()
+            else:
+                db.session.add(record)
+                db.session.commit()
         except Exception as e:
             flash(str(e))
         else:
-            flash("添加成功")
+            flash("成功")
     else:
         flash(form.get_errors())
 
